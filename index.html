@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>HydrogenVPN</title>
+  <meta name="description" content="HydrogenVPN — быстрый и приватный доступ." />
+  <meta name="theme-color" content="#050a14" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon-192.png" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050a14;
+      --text: #ffffff;
+      --hint: #8a9bb8;
+      --button: #00e5ff;
+      --button-text: #000000;
+      --section-bg: rgba(12, 20, 40, 0.75);
+      --header-bg: rgba(5, 10, 20, 0.8);
+      --accent: #00e5ff;
+      --accent-soft: rgba(0, 229, 255, 0.15);
+      --success: #00ff88;
+      --warning: #ffb020;
+      --danger: #ff4466;
+      --radius: 16px;
+      --radius-sm: 12px;
+      --border: rgba(0, 229, 255, 0.2);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 40px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ─────────── BACKGROUND ─────────── */
+    .bg-layer {
+      position: fixed; inset: 0; z-index: -1;
+      background: radial-gradient(circle at 80% 10%, #0a2a6a 0%, #050a14 60%, #000000 100%);
+      overflow: hidden;
+    }
+    .bg-layer::before {
+      content: '';
+      position: absolute;
+      top: -10%; right: -15%;
+      width: 90%; height: 90%;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 18px solid #ffffff;
+      border-color: #ffffff transparent transparent transparent;
+      transform: rotate(-35deg);
+      box-shadow: 0 0 60px rgba(255, 255, 255, 0.4), inset 0 0 40px rgba(255, 255, 255, 0.2);
+      filter: blur(0.5px);
+      opacity: 0.9;
+    }
+
+    /* ─────────── HEADER ─────────── */
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      background: var(--header-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      position: sticky; top: 0; z-index: 100;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      font-size: 26px; line-height: 1;
+      filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.7));
+    }
+    .logo-text { font-weight: 800; font-size: 1.15rem; letter-spacing: -0.2px; }
+    .logo-text .accent { color: var(--accent); }
+
+    .header-actions { display: flex; gap: 8px; }
+    .header-btn {
+      min-width: 38px; height: 38px; padding: 0 10px;
+      border-radius: 11px; border: none;
+      background: var(--accent-soft); color: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.2s;
+      font-size: 0.8rem; font-weight: 700;
+    }
+    .header-btn:active { background: rgba(0, 229, 255, 0.3); }
+
+    /* ─────────── MAIN ─────────── */
+    .main { max-width: 560px; margin: 0 auto; padding: 16px; position: relative; z-index: 1; }
+
+    /* ─────────── SUB CARD ─────────── */
+    .sub-card {
+      background: var(--section-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      display: flex; align-items: center;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .sub-info { display: flex; align-items: center; gap: 12px; min-width: 0; width: 100%; }
+    .sub-status {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 800; flex-shrink: 0;
+    }
+    .sub-status.ok {
+      background: rgba(0, 255, 136, 0.15); color: var(--success);
+      box-shadow: 0 0 12px rgba(0, 255, 136, 0.35);
+    }
+    .sub-status.none {
+      background: rgba(255, 68, 102, 0.15); color: var(--danger);
+      box-shadow: 0 0 12px rgba(255, 68, 102, 0.3);
+    }
+    .sub-name { font-weight: 700; font-size: 1rem; }
+    .sub-sub {
+      font-size: 0.8rem; color: var(--hint); margin-top: 3px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .sub-sub .dot-live {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--success); box-shadow: 0 0 8px var(--success);
+      display: inline-block;
+    }
+
+    /* ─────────── LINK BOX ─────────── */
+    .link-box {
+      background: var(--section-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .link-label {
+      font-size: 0.72rem; color: var(--hint); margin-bottom: 6px;
+      text-transform: uppercase; letter-spacing: 0.6px; font-weight: 600;
+    }
+    .link-value {
+      font-family: 'SF Mono', Monaco, monospace; font-size: 0.78rem;
+      color: var(--text); word-break: break-all;
+      background: rgba(0, 0, 0, 0.4); padding: 10px 12px;
+      border-radius: var(--radius-sm); margin-bottom: 10px;
+      max-height: 90px; overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* ─────────── INSTALL CARD ─────────── */
+    .card {
+      background: var(--section-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      padding: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .card-title {
+      font-size: 1.25rem; font-weight: 800; letter-spacing: -0.3px;
+      text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+    }
+
+    /* ─────────── PLATFORM SELECTOR ─────────── */
+    .platform-selector { position: relative; }
+    .platform-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border: 1px solid var(--border);
+      border-radius: 20px; background: rgba(0, 229, 255, 0.08);
+      font-size: 0.85rem; font-weight: 600; color: var(--accent);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .platform-btn:active { background: rgba(0, 229, 255, 0.2); }
+    .platform-dropdown {
+      display: none; position: absolute; top: calc(100% + 8px); right: 0;
+      background: rgba(15, 25, 45, 0.98);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 14px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 229, 255, 0.2);
+      z-index: 50; min-width: 200px; overflow: hidden;
+      animation: fadeIn 0.15s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .platform-dropdown.open { display: block; }
+    .platform-option {
+      display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+      font-size: 0.9rem; color: #ffffff; cursor: pointer;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      transition: background 0.15s;
+    }
+    .platform-option:last-child { border-bottom: none; }
+    .platform-option:active { background: rgba(0, 229, 255, 0.1); }
+    .platform-option.active { color: var(--accent); font-weight: 600; }
+    .platform-option.active::after { content: '✓'; margin-left: auto; font-size: 1rem; }
+
+    /* ─────────── DETECTED BADGE ─────────── */
+    .detected-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(0, 229, 255, 0.1); color: var(--accent);
+      font-size: 0.78rem; font-weight: 600; padding: 5px 12px;
+      border-radius: 20px; margin-bottom: 16px;
+      border: 1px solid rgba(0, 229, 255, 0.2);
+    }
+    .detected-badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--success); box-shadow: 0 0 8px var(--success);
+    }
+
+    /* ─────────── CLIENT TABS ─────────── */
+    .client-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .client-tab {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px; border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 0.85rem; font-weight: 600;
+      color: #a0b0c0; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .client-tab.active {
+      background: linear-gradient(135deg, #00e5ff, #0066ff);
+      color: #000000; border-color: transparent;
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+      font-weight: 700;
+    }
+
+    /* ─────────── STEPS ─────────── */
+    .steps { position: relative; padding-left: 6px; }
+    .step { display: flex; gap: 16px; padding-bottom: 26px; position: relative; }
+    .step:not(:last-child)::before {
+      content: ''; position: absolute; left: 15px; top: 36px; bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, rgba(0, 229, 255, 0.4), transparent);
+    }
+    .step-icon {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: transparent; border: 2px solid var(--accent);
+      color: var(--accent); display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem; flex-shrink: 0; z-index: 1;
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.3);
+    }
+    .step-icon.done { background: var(--accent); color: #000000; box-shadow: 0 0 20px rgba(0, 229, 255, 0.6); }
+    .step-content h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+    .step-content p { font-size: 0.85rem; color: var(--hint); line-height: 1.5; margin-bottom: 12px; }
+
+    /* ─────────── BUTTONS ─────────── */
+    .btn-group { display: flex; flex-wrap: wrap; gap: 10px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 20px; border-radius: 12px;
+      font-size: 0.85rem; font-weight: 600; border: none;
+      cursor: pointer; text-decoration: none; transition: all 0.2s;
+    }
+    .btn:active { transform: scale(0.97); opacity: 0.9; }
+    .btn-primary {
+      background: linear-gradient(135deg, #00e5ff, #0066ff);
+      color: #000000; box-shadow: 0 4px 20px rgba(0, 229, 255, 0.3);
+      font-weight: 700;
+    }
+    .btn-secondary {
+      background: rgba(0, 229, 255, 0.1); color: var(--accent);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+    }
+    .btn-connect {
+      background: linear-gradient(135deg, #00e5ff, #00ff88);
+      color: #000000; box-shadow: 0 4px 20px rgba(0, 229, 255, 0.4);
+      font-weight: 800;
+    }
+    .btn-connect:disabled {
+      opacity: 0.4; cursor: not-allowed;
+      background: rgba(255, 255, 255, 0.1); color: var(--hint);
+      box-shadow: none;
+    }
+
+    .footer-note { text-align: center; margin-top: 28px; font-size: 0.75rem; color: rgba(255, 255, 255, 0.3); }
+
+    /* ─────────── QR MODAL ─────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 300;
+      align-items: center; justify-content: center;
+      padding: 20px;
+      animation: fadeIn 0.2s ease-out;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-content {
+      background: rgba(15, 25, 45, 0.98);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 229, 255, 0.2);
+      position: relative;
+    }
+    .modal-close {
+      position: absolute; top: 12px; right: 12px;
+      width: 32px; height: 32px; border-radius: 50%;
+      border: none; background: rgba(255, 255, 255, 0.08);
+      color: var(--hint); font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .modal-content h3 {
+      font-size: 1.1rem; font-weight: 800; margin-bottom: 6px;
+      color: #fff;
+    }
+    .modal-content .modal-sub {
+      font-size: 0.78rem; color: var(--hint); margin-bottom: 16px;
+      word-break: break-all;
+    }
+    .qr-wrap {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      margin: 0 auto 18px;
+      min-width: 240px; min-height: 240px;
+      box-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
+    }
+    .qr-wrap canvas, .qr-wrap img { display: block; border-radius: 4px; }
+    .modal-content .btn { width: 100%; }
+  </style>
+</head>
+<body>
+
+  <div class="bg-layer"></div>
+
+  <!-- ─────────── HEADER ─────────── -->
+  <header class="header">
+    <div class="logo">
+      <span class="logo-icon">🐍</span>
+      <span class="logo-text">Hydrogen<span class="accent">VPN</span></span>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn" onclick="openQrModal()" title="QR">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/>
+          <rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <path d="M14 14h3v3h-3z"/>
+          <path d="M18 18h3v3h-3z"/>
+          <path d="M14 21v-3"/>
+          <path d="M21 14h-3"/>
+        </svg>
+      </button>
+      <button class="header-btn" onclick="toggleLang()" title="Language">
+        <span id="langLabel">RU</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ─────────── MAIN ─────────── -->
+  <main class="main">
+
+    <div class="sub-card">
+      <div class="sub-info" id="subCardContent"></div>
+    </div>
+
+    <div class="link-box" id="linkBox" style="display:none;">
+      <div class="link-label" id="linkLabel">Твоя ссылка для подключения</div>
+      <div class="link-value" id="subLink">—</div>
+      <button class="btn btn-secondary" onclick="copyLink()" style="width:100%;">
+        <span id="copyLinkLabel">📋 Скопировать ссылку</span>
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h1 class="card-title" id="installTitle">Установка</h1>
+        <div class="platform-selector">
+          <button class="platform-btn" id="platformBtn" onclick="togglePlatformDropdown()">
+            <span id="platformIcon">📱</span>
+            <span id="platformName">iOS</span>
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="platform-dropdown" id="platformDropdown">
+            <div class="platform-option" data-platform="windows" onclick="selectPlatform('windows')"><span>🪟</span> Windows</div>
+            <div class="platform-option" data-platform="macos" onclick="selectPlatform('macos')"><span>🍎</span> macOS</div>
+            <div class="platform-option" data-platform="linux" onclick="selectPlatform('linux')"><span>🐧</span> Linux</div>
+            <div class="platform-option" data-platform="android" onclick="selectPlatform('android')"><span>🤖</span> Android</div>
+            <div class="platform-option" data-platform="ios" onclick="selectPlatform('ios')"><span>📱</span> iOS</div>
+            <div class="platform-option" data-platform="androidtv" onclick="selectPlatform('androidtv')"><span>📺</span> Android TV</div>
+            <div class="platform-option" data-platform="appletv" onclick="selectPlatform('appletv')"><span>📺</span> Apple TV</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detected-badge" id="detectedBadge" style="display:none;">
+        <span class="dot"></span>
+        <span id="detectedText">Определена платформа</span>
+      </div>
+
+      <div class="client-tabs" id="clientTabs"></div>
+      <div class="steps" id="stepsContent"></div>
+    </div>
+
+    <p class="footer-note">HydrogenVPN • Secure • Fast • Private</p>
+  </main>
+
+  <!-- ─────────── QR MODAL ─────────── -->
+  <div class="modal-overlay" id="qrModal" onclick="closeQrModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeQrModal()">✕</button>
+      <h3 id="qrTitle">QR-код подписки</h3>
+      <div class="modal-sub" id="qrSub"></div>
+      <div class="qr-wrap" id="qrWrap"></div>
+      <button class="btn btn-primary" onclick="copyLink()">
+        <span id="qrCopyLabel">📋 Скопировать ссылку</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    /* ─────────── PARAMS ─────────── */
+    const params = new URLSearchParams(window.location.search);
+    let SUBSCRIPTION_URL = params.get('sub') || '';
+    let SUB_NAME = params.get('name') || '';
+    let SUB_EXPIRES = params.get('expires') || '';
+
+    if (!SUBSCRIPTION_URL && tg?.initDataUnsafe?.start_param) {
+      const sp = tg.initDataUnsafe.start_param;
+      try {
+        const parts = sp.split('_');
+        if (parts[0] === 'sub' && parts[1]) SUBSCRIPTION_URL = atob(parts[1]);
+        if (parts[2] === 'name' && parts[3]) SUB_NAME = atob(parts[3]);
+        if (parts[4] === 'exp' && parts[5]) SUB_EXPIRES = atob(parts[5]);
+      } catch (e) { console.warn('start_param parse error', e); }
+    }
+
+    /* ─────────── TRANSLATIONS ─────────── */
+    const T = {
+      ru: {
+        noSubTitle: 'Подписка не найдена',
+        noSubDesc: 'Получи подписку в боте',
+        readyTitle: 'Готово к подключению',
+        expiresPrefix: 'Истекает:',
+        yourLink: 'Твоя ссылка для подключения',
+        copyLink: '📋 Скопировать ссылку',
+        copied: 'Ссылка скопирована!',
+        notFound: 'Ссылка не найдена',
+        installTitle: 'Установка',
+        installAppTitle: 'Установка приложения',
+        installAppDesc: 'Скачай и установи приложение для своей платформы.',
+        addSubTitle: 'Добавление подписки',
+        ifNotTitle: 'Если подписка не добавилась',
+        ifNotDesc: 'Нажми «Скопировать ссылку» и вставь её вручную в приложении: «+» → «Импорт из URL» или «Импорт из буфера обмена».',
+        doneTitle: 'Готово',
+        doneDesc: 'Выбери профиль и включи VPN / TUN. Разреши создание сетевого подключения.',
+        connect: '⚡ Подключить',
+        copyShort: '📋 Скопировать ссылку',
+        qrTitle: 'QR-код подписки',
+        detectedPrefix: 'Определена платформа:',
+        noSubAlert: 'Ссылка на подписку ещё не настроена',
+        deepLinkFail: 'Не удалось открыть автоматически. Ссылка скопирована — вставь её в приложении вручную.',
+        copiedManual: 'Ссылка скопирована! Открой приложение и вставь её через «+» → «Импорт из буфера обмена».',
+      },
+      en: {
+        noSubTitle: 'No subscription found',
+        noSubDesc: 'Get a subscription in the bot',
+        readyTitle: 'Ready to connect',
+        expiresPrefix: 'Expires:',
+        yourLink: 'Your connection link',
+        copyLink: '📋 Copy link',
+        copied: 'Link copied!',
+        notFound: 'Link not found',
+        installTitle: 'Installation',
+        installAppTitle: 'App installation',
+        installAppDesc: 'Download and install the app for your platform.',
+        addSubTitle: 'Adding subscription',
+        ifNotTitle: "If the subscription didn't load",
+        ifNotDesc: 'Press "Copy link" and paste it manually in the app: "+" → "Import from URL" or "Import from clipboard".',
+        doneTitle: 'Done',
+        doneDesc: 'Choose a profile and enable VPN / TUN. Allow the network connection.',
+        connect: '⚡ Connect',
+        copyShort: '📋 Copy link',
+        qrTitle: 'Subscription QR',
+        detectedPrefix: 'Detected platform:',
+        noSubAlert: 'Subscription link is not set yet',
+        deepLinkFail: 'Could not open automatically. The link has been copied — paste it in the app manually.',
+        copiedManual: 'Link copied! Open the app and paste it via "+" → "Import from clipboard".',
+      }
+    };
+
+    let currentLang = 'ru';
+
+    /* ─────────── PLATFORMS ─────────── */
+    const platforms = {
+      windows: {
+        name: 'Windows', icon: '🪟',
+        clients: [
+          {
+            id: 'flclashx', name: 'FlClashX', icon: '⚡',
+            install: [{ label: '⬇ Install', url: 'https://github.com/pluralplay/FlClashX/releases/latest' }],
+            addText: {
+              ru: 'Скопируй ссылку → открой FlClashX → Profiles → «+» → «Импорт из URL» → вставь ссылку.',
+              en: 'Copy the link → open FlClashX → Profiles → "+" → "Import from URL" → paste.'
+            }
+          },
+          {
+            id: 'koala', name: 'Koala Clash', icon: '🐨',
+            install: [{ label: '⬇ Install', url: 'https://github.com/coolcoala/koala-clash/releases/latest' }],
+            addText: {
+              ru: 'Скопируй ссылку → открой Koala Clash → «+» → «Импорт из URL» → вставь ссылку.',
+              en: 'Copy the link → open Koala Clash → "+" → "Import from URL" → paste.'
+            }
+          },
+          {
+            id: 'happ', name: 'Happ', icon: 'H',
+            install: [{ label: '⬇ Install', url: 'https://github.com/Happ-proxy/happ-desktop/releases/latest/download/setup-Happ.x64.exe' }],
+            addText: {
+              ru: 'Нажми «Подключить» — Happ откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — Happ will open and import the subscription automatically.'
+            }
+          },
+          {
+            id: 'throne', name: 'Throne', icon: '👑',
+            install: [{ label: '⬇ Install', url: 'https://github.com/throneproj/Throne/releases/latest' }],
+            addText: {
+              ru: 'Скопируй ссылку → открой Throne → «+» → «Импорт из буфера обмена».',
+              en: 'Copy the link → open Throne → "+" → "Import from clipboard".'
+            }
+          }
+        ]
+      },
+
+      macos: {
+        name: 'macOS', icon: '🍎',
+        clients: [
+          {
+            id: 'flclashx', name: 'FlClashX', icon: '⚡',
+            install: [{ label: '⬇ Install', url: 'https://github.com/pluralplay/FlClashX/releases/latest' }],
+            addText: {
+              ru: 'Скопируй ссылку → открой FlClashX → Profiles → «+» → «Импорт из URL» → вставь ссылку.',
+              en: 'Copy the link → open FlClashX → Profiles → "+" → "Import from URL" → paste.'
+            }
+          },
+          {
+            id: 'koala', name: 'Koala Clash', icon: '🐨',
+            install: [{ label: '⬇ Install', url: 'https://github.com/coolcoala/koala-clash/releases/latest' }],
+            addText: {
+              ru: 'Скопируй ссылку → открой Koala Clash → «+» → «Импорт из URL» → вставь ссылку.',
+              en: 'Copy the link → open Koala Clash → "+" → "Import from URL" → paste.'
+            }
+          },
+          {
+            id: 'happ', name: 'Happ', icon: 'H',
+            install: [{ label: '⬇ Install', url: 'https://github.com/Happ-proxy/happ-desktop/releases/latest/download/Happ.macOS.universal.dmg' }],
+            addText: {
+              ru: 'Нажми «Подключить» — Happ откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — Happ will open and import the subscription automatically.'
+            }
+          },
+          {
+            id: 'karing', name: 'Karing', icon: 'K',
+            install: [{ label: '⬇ App Store', url: 'https://apps.apple.com/us/app/karing/id6472431552' }],
+            addText: {
+              ru: 'Нажми «Подключить» — Karing откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — Karing will open and import the subscription automatically.'
+            }
+          }
+        ]
+      },
+
+      linux: {
+        name: 'Linux', icon: '🐧',
+        clients: [
+          {
+            id: 'flclashx', name: 'FlClashX', icon: '⚡',
+            install: [{ label: '⬇ Install', url: 'https://github.com/pluralplay/FlClashX/releases/latest' }],
+            addText: {
+              ru: 'Скопируй ссылку → открой FlClashX → Profiles → «+» → «Импорт из URL» → вставь ссылку.',
+              en: 'Copy the link → open FlClashX → Profiles → "+" → "Import from URL" → paste.'
+            }
+          },
+          {
+            id: 'koala', name: 'Koala Clash', icon: '🐨',
+            install: [{ label: '⬇ Install', url: 'https://github.com/coolcoala/koala-clash/releases/latest' }],
+            addText: {
+              ru: 'Скопируй ссылку → открой Koala Clash → «+» → «Импорт из URL» → вставь ссылку.',
+              en: 'Copy the link → open Koala Clash → "+" → "Import from URL" → paste.'
+            }
+          },
+          {
+            id: 'happ', name: 'Happ', icon: 'H',
+            install: [
+              { label: '⬇ .deb', url: 'https://github.com/Happ-proxy/happ-desktop/releases/latest/download/Happ.linux.x64.deb' },
+              { label: '⬇ .rpm', url: 'https://github.com/Happ-proxy/happ-desktop/releases/latest/download/Happ.linux.x64.rpm' }
+            ],
+            addText: {
+              ru: 'Нажми «Подключить» — Happ откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — Happ will open and import the subscription automatically.'
+            }
+          },
+          {
+            id: 'throne', name: 'Throne', icon: '👑',
+            install: [{ label: '⬇ Install', url: 'https://github.com/throneproj/Throne/releases/latest' }],
+            addText: {
+              ru: 'Скопируй ссылку → открой Throne → «+» → «Импорт из буфера обмена».',
+              en: 'Copy the link → open Throne → "+" → "Import from clipboard".'
+            }
+          }
+        ]
+      },
+
+      ios: {
+        name: 'iOS', icon: '📱',
+        clients: [
+          {
+            id: 'happ', name: 'Happ', icon: 'H',
+            install: [
+              { label: '⬇ App Store (RU)', url: 'https://apps.apple.com/ru/app/happ-proxy-utility/id6783623643' },
+              { label: '⬇ App Store (GLOBAL)', url: 'https://apps.apple.com/us/app/happ-proxy-utility/id6504287215' }
+            ],
+            addText: {
+              ru: 'Нажми «Подключить» — Happ откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — Happ will open and import the subscription automatically.'
+            }
+          },
+          {
+            id: 'karing', name: 'Karing', icon: 'K',
+            install: [{ label: '⬇ App Store', url: 'https://apps.apple.com/us/app/karing/id6472431552' }],
+            addText: {
+              ru: 'Нажми «Подключить» — Karing откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — Karing will open and import the subscription automatically.'
+            }
+          },
+          {
+            id: 'incy', name: 'INCY', icon: 'I',
+            install: [{ label: '⬇ App Store', url: 'https://apps.apple.com/us/app/incy/id6756943388' }],
+            addText: {
+              ru: 'Нажми «Подключить» — INCY откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — INCY will open and import the subscription automatically.'
+            }
+          }
+        ]
+      },
+
+      android: {
+        name: 'Android', icon: '🤖',
+        clients: [
+          {
+            id: 'happ', name: 'Happ', icon: 'H',
+            install: [
+              { label: '⬇ Google Play', url: 'https://play.google.com/store/apps/details?id=com.happproxy' },
+              { label: '⬇ APK', url: 'https://github.com/Happ-proxy/happ-android/releases/latest/download/Happ.apk' }
+            ],
+            addText: {
+              ru: 'Нажми «Подключить» — Happ откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — Happ will open and import the subscription automatically.'
+            }
+          },
+          {
+            id: 'karing', name: 'Karing', icon: 'K',
+            install: [{ label: '⬇ Google Play', url: 'https://play.google.com/store/apps/details?id=com.neko7ina.karing' }],
+            addText: {
+              ru: 'Нажми «Подключить» — Karing откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — Karing will open and import the subscription automatically.'
+            }
+          },
+          {
+            id: 'incy', name: 'INCY', icon: 'I',
+            install: [{ label: '⬇ Google Play', url: 'https://play.google.com/store/search?q=INCY&c=apps' }],
+            addText: {
+              ru: 'Нажми «Подключить» — INCY откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — INCY will open and import the subscription automatically.'
+            }
+          }
+        ]
+      },
+
+      androidtv: {
+        name: 'Android TV', icon: '📺',
+        clients: [
+          {
+            id: 'happ', name: 'Happ', icon: 'H',
+            install: [
+              { label: '⬇ Google Play', url: 'https://play.google.com/store/apps/details?id=com.happproxy' },
+              { label: '⬇ APK', url: 'https://github.com/Happ-proxy/happ-android/releases/latest/download/Happ.apk' }
+            ],
+            addText: {
+              ru: 'Нажми «Подключить» — Happ откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — Happ will open and import the subscription automatically.'
+            }
+          }
+        ]
+      },
+
+      appletv: {
+        name: 'Apple TV', icon: '📺',
+        clients: [
+          {
+            id: 'happ', name: 'Happ', icon: 'H',
+            install: [{ label: '⬇ App Store', url: 'https://apps.apple.com/us/app/happ-proxy-utility-for-tv/id6748297274' }],
+            addText: {
+              ru: 'Нажми «Подключить» — Happ откроется и сразу импортирует подписку.',
+              en: 'Press "Connect" — Happ will open and import the subscription automatically.'
+            }
+          }
+        ]
+      }
+    };
+
+    /* ─────────── STATE ─────────── */
+    let currentPlatform = 'ios';
+    let currentClient = 'happ';
+    let detectedPlatform = 'ios';
+
+    /* ─────────── HELPERS ─────────── */
+    const t = () => T[currentLang];
+    const hasSub = () => !!SUBSCRIPTION_URL;
+
+    function buildDeepLink(clientId, sub) {
+      if (!sub) return null;
+      const e = encodeURIComponent(sub);
+      switch (clientId) {
+        case 'happ':   return 'happ://add/' + e;
+        case 'karing': return 'karing://install-config?url=' + e;
+        case 'incy':   return 'incy://add?url=' + e;
+        default:       return null;
+      }
+    }
+
+    function notify(msg) {
+      if (tg?.showAlert) tg.showAlert(msg);
+      else alert(msg);
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(text);
+      return Promise.reject();
+    }
+
+    /* ─────────── RENDER: SUB CARD ─────────── */
+    function renderSubCard() {
+      const el = document.getElementById('subCardContent');
+      const tr = t();
+      if (hasSub()) {
+        const expiresText = SUB_EXPIRES
+          ? `${tr.expiresPrefix} ${SUB_EXPIRES}`
+          : tr.readyTitle;
+        el.innerHTML = `
+          <div class="sub-status ok">✓</div>
+          <div style="min-width:0;flex:1;">
+            <div class="sub-name">${escapeHtml(SUB_NAME || 'Subscription')}</div>
+            <div class="sub-sub">
+              <span class="dot-live"></span>
+              <span>${escapeHtml(expiresText)}</span>
+            </div>
+          </div>
+        `;
+      } else {
+        el.innerHTML = `
+          <div class="sub-status none">!</div>
+          <div style="min-width:0;flex:1;">
+            <div class="sub-name">${tr.noSubTitle}</div>
+            <div class="sub-sub">${tr.noSubDesc}</div>
+          </div>
+        `;
+      }
+      document.getElementById('linkBox').style.display = hasSub() ? 'block' : 'none';
+      document.getElementById('linkLabel').textContent = tr.yourLink;
+      document.getElementById('copyLinkLabel').textContent = tr.copyLink;
+      document.getElementById('subLink').textContent = SUBSCRIPTION_URL || '—';
+      document.getElementById('installTitle').textContent = tr.installTitle;
+      document.getElementById('qrTitle').textContent = tr.qrTitle;
+      document.getElementById('qrCopyLabel').textContent = tr.copyLink;
+      document.getElementById('qrSub').textContent = hasSub() ? (SUB_NAME || 'Subscription') : '';
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    /* ─────────── RENDER: CLIENTS ─────────── */
+    function renderClients() {
+      const p = platforms[currentPlatform];
+      const tabs = document.getElementById('clientTabs');
+      tabs.innerHTML = '';
+      p.clients.forEach((client, i) => {
+        const tab = document.createElement('div');
+        tab.className = 'client-tab' + (i === 0 ? ' active' : '');
+        tab.dataset.client = client.id;
+        tab.innerHTML = `<span>${client.icon}</span> ${client.name}`;
+        tab.onclick = () => selectClient(client.id);
+        tabs.appendChild(tab);
+      });
+      currentClient = p.clients[0].id;
+      renderSteps();
+    }
+
+    /* ─────────── RENDER: STEPS ─────────── */
+    function renderSteps() {
+      const tr = t();
+      const p = platforms[currentPlatform];
+      const client = p.clients.find(c => c.id === currentClient) || p.clients[0];
+      const installs = client.install || [];
+      const addText = (client.addText && (client.addText[currentLang] || client.addText.ru)) || '';
+      const connectDisabled = !hasSub();
+
+      const container = document.getElementById('stepsContent');
+      container.innerHTML = `
+        <div class="step">
+          <div class="step-icon">1</div>
+          <div class="step-content">
+            <h3>${tr.installAppTitle}</h3>
+            <p>${tr.installAppDesc}</p>
+            <div class="btn-group">
+              ${installs.map(d => `<a href="${d.url}" class="btn btn-primary" target="_blank" rel="noopener">${d.label}</a>`).join('')}
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-icon">2</div>
+          <div class="step-content">
+            <h3>${tr.addSubTitle}</h3>
+            <p>${addText}</p>
+            <div class="btn-group">
+              <button class="btn btn-connect" onclick="connectApp()" ${connectDisabled ? 'disabled' : ''}>${tr.connect}</button>
+              <button class="btn btn-secondary" onclick="copyLink()">${tr.copyShort}</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-icon">⚙</div>
+          <div class="step-content">
+            <h3>${tr.ifNotTitle}</h3>
+            <p>${tr.ifNotDesc}</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-icon done">✓</div>
+          <div class="step-content">
+            <h3>${tr.doneTitle}</h3>
+            <p>${tr.doneDesc}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    /* ─────────── INTERACTIONS ─────────── */
+    function selectPlatform(platformId) {
+      currentPlatform = platformId;
+      const p = platforms[platformId];
+      document.getElementById('platformIcon').textContent = p.icon;
+      document.getElementById('platformName').textContent = p.name;
+      document.querySelectorAll('.platform-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.platform === platformId);
+      });
+      document.getElementById('platformDropdown').classList.remove('open');
+      renderClients();
+    }
+
+    function selectClient(clientId) {
+      currentClient = clientId;
+      document.querySelectorAll('.client-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.client === clientId);
+      });
+      renderSteps();
+    }
+
+    function togglePlatformDropdown() {
+      document.getElementById('platformDropdown').classList.toggle('open');
+    }
+
+    document.addEventListener('click', (e) => {
+      const ps = document.querySelector('.platform-selector');
+      if (ps && !ps.contains(e.target)) {
+        document.getElementById('platformDropdown').classList.remove('open');
+      }
+    });
+
+    /* ─────────── LANGUAGE ─────────── */
+    function toggleLang() {
+      currentLang = currentLang === 'ru' ? 'en' : 'ru';
+      document.getElementById('langLabel').textContent = currentLang.toUpperCase();
+      document.documentElement.lang = currentLang;
+      renderSubCard();
+      renderSteps();
+      // re-render detected badge
+      const p = platforms[detectedPlatform];
+      document.getElementById('detectedText').textContent = t().detectedPrefix + ' ' + p.name;
+    }
+
+    /* ─────────── COPY ─────────── */
+    function copyLink() {
+      if (!hasSub()) { notify(t().notFound); return; }
+      copyToClipboard(SUBSCRIPTION_URL)
+        .then(() => notify(t().copied))
+        .catch(() => notify(SUBSCRIPTION_URL));
+    }
+
+    /* ─────────── QR MODAL ─────────── */
+    function openQrModal() {
+      if (!hasSub()) { notify(t().notFound); return; }
+      const modal = document.getElementById('qrModal');
+      const wrap = document.getElementById('qrWrap');
+      wrap.innerHTML = '';
+      // eslint-disable-next-line no-undef
+      new QRCode(wrap, {
+        text: SUBSCRIPTION_URL,
+        width: 220,
+        height: 220,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      document.getElementById('qrSub').textContent = SUB_NAME || '';
+      modal.classList.add('open');
+    }
+    function closeQrModal(e) {
+      if (e && e.target && e.target.id !== 'qrModal' && !e.target.classList.contains('modal-close')) {
+        return;
+      }
+      document.getElementById('qrModal').classList.remove('open');
+    }
+
+    /* ─────────── DEEP LINK ─────────── */
+    function openExternal(url) {
+      if (tg?.openLink) tg.openLink(url);
+      else window.open(url, '_blank');
+    }
+
+    function openDeepLink(deepLink, clientName) {
+      let left = false;
+      const onVis = () => { if (document.hidden) left = true; };
+      document.addEventListener('visibilitychange', onVis);
+
+      setTimeout(() => {
+        document.removeEventListener('visibilitychange', onVis);
+        if (!left) {
+          copyToClipboard(SUBSCRIPTION_URL)
+            .then(() => notify(t().deepLinkFail))
+            .catch(() => notify(t().deepLinkFail));
+        }
+      }, 1800);
+
+      try { window.location.href = deepLink; }
+      catch (err) { console.warn('deep link error', err); }
+    }
+
+    function connectApp() {
+      if (!hasSub()) { notify(t().noSubAlert); return; }
+      const client = platforms[currentPlatform].clients.find(c => c.id === currentClient);
+      const clientName = client ? client.name : '';
+      const deepLink = buildDeepLink(currentClient, SUBSCRIPTION_URL);
+      if (deepLink) {
+        openDeepLink(deepLink, clientName);
+      } else {
+        copyToClipboard(SUBSCRIPTION_URL)
+          .then(() => notify(t().copiedManual))
+          .catch(() => openExternal(SUBSCRIPTION_URL));
+      }
+    }
+
+    /* ─────────── DETECT PLATFORM ─────────── */
+    function detectPlatform() {
+      const ua = navigator.userAgent.toLowerCase();
+      const platform = (navigator.platform || '').toLowerCase();
+      if (/android/.test(ua)) {
+        if (/tv|smart-tv|googletv|hbbtv|netcast|webos/.test(ua)) return 'androidtv';
+        return 'android';
+      }
+      if (/iphone|ipad|ipod/.test(ua)) return 'ios';
+      if (/mac/.test(platform) || /macintosh/.test(ua)) return 'macos';
+      if (/win/.test(platform) || /windows/.test(ua)) return 'windows';
+      if (/linux/.test(platform) || /linux/.test(ua) || /x11/.test(ua)) return 'linux';
+      if (/appletv/.test(ua)) return 'appletv';
+      return 'windows';
+    }
+
+    /* ─────────── INIT ─────────── */
+    (function init() {
+      detectedPlatform = detectPlatform();
+      currentPlatform = detectedPlatform;
+      const p = platforms[detectedPlatform];
+      document.getElementById('detectedText').textContent = t().detectedPrefix + ' ' + p.name;
+      document.getElementById('detectedBadge').style.display = 'inline-flex';
+      document.getElementById('platformIcon').textContent = p.icon;
+      document.getElementById('platformName').textContent = p.name;
+      document.querySelectorAll('.platform-option').forEach(opt => {
+        opt.classList.toggle('active', opt.dataset.platform === detectedPlatform);
+      });
+      renderSubCard();
+      renderClients();
+    })();
+  </script>
+</body>
+</html>
